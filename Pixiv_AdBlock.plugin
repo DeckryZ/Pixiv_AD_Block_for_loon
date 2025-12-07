@@ -1,0 +1,11 @@
+#!name = Pixiv AdBlock
+#!desc = 移除 Pixiv 广告
+#!author = DeckryZ
+#!icon = https://www.pixiv.net/favicon.ico
+
+[Script]
+# 格式：别名 = type=类型, pattern=正则, script-path=链接, requires-body=true/false
+http-response ^https?:\/\/oauth\.secure\.pixiv\.net\/(auth\/token) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Crack
+
+[MitM]
+hostname = oauth.secure.pixiv.net
