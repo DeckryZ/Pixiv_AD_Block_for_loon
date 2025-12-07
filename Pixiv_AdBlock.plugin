@@ -1,7 +1,7 @@
 #!name = Pixiv AdBlock
 #!desc = 移除 Pixiv 广告
 #!author = DeckryZ
-#!icon = https://www.pixiv.net/favicon.ico
+#!icon = https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/main/IMG_6727.webp
 
 [Script]
 # 格式：别名 = type=类型, pattern=正则, script-path=链接, requires-body=true/false
