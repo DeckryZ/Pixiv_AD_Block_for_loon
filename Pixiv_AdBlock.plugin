@@ -1,19 +1,13 @@
-#!name = Pixiv Pro (Remote Sync)
-#!desc = [全远程脚本] 移除广告 + 解锁 VIP + 强制请求100张 + 搜索热度排序(Top 10)
+#!name = Pixiv Pro (Smart Page)
+#!desc = VIP + 搜索排序。尝试通过修改 next_url 让后续页面加载更多。
 #!author = DeckryZ
-#!icon = https://www.pixiv.net/favicon.ico
+#!icon = https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/blob/main/IMG_6727.webp
 
 [Script]
-# 1. 发送请求时：拦截并修改 URL (引用远程 pixiv_request.js)
-# 功能：尝试注入 &limit=100
-http-request ^https?:\/\/app-api\.pixiv\.net\/v\d\/.*search\/illust script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_request.js, tag=Pixiv_Req_100
+# 响应拦截
+http-response ^https?:\/\/app-api\.pixiv\.net\/v\d\/.*(search\/illust|illust\/recommended) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Sort
 
-# 2. 收到回复时：排序 + 切片 (引用远程 pixiv_adblock.js)
-# 功能：按热度排序并只取前 10 张 (你刚才确认过这个脚本里包含了排序逻辑)
-http-response ^https?:\/\/app-api\.pixiv\.net\/v\d\/.*(search\/illust|illust\/recommended) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Res_Sort
-
-# 3. VIP 验证接口 (引用远程 pixiv_adblock.js)
-# 功能：解锁 VIP
+# VIP 验证
 http-response ^https?:\/\/oauth\.secure\.pixiv\.net\/(auth\/token) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Auth
 
 [MitM]
