@@ -1,11 +1,9 @@
 /*
- * Pixiv Pro (Response Handler)
- * ----------------------------
- * 功能：
- * 1. VIP 解锁
- * 2. 监测实际加载数量 (日志+弹窗)
- * 3. 搜索结果热度排序
- * 4. 只保留 Top 10
+ * Pixiv Pro (Smart Next & Detection)
+ * ------------------------------
+ * 1. 自动检测并打印实际获取的图片数量
+ * 2. 修改下一页链接 (next_url)，尝试索要 100 张
+ * 3. 排序并保留 Top 10
  */
 
 var body = JSON.parse($response.body);
@@ -16,27 +14,41 @@ if (body.response && body.response.user) body.response.user.is_premium = true;
 if (body.user) body.user.is_premium = true;
 
 // 2. 搜索逻辑
-if (url.indexOf("word=") !== -1 && body.illusts && Array.isArray(body.illusts)) {
-    
-    // === 📊 数量检测 ===
-    var totalCount = body.illusts.length;
-    console.log("📊 [Pixiv] 本次加载图片数量: " + totalCount);
+if (url.indexOf("word=") !== -1) {
 
-    // 如果成功突破 30 张，发个弹窗庆祝一下 (防止刷屏，只有>30才弹)
-    if (totalCount > 30) {
-        $notification.post("Pixiv Pro", "请求增强成功", "服务器返回了 " + totalCount + " 张图片进行排序！");
+    // === 📊 探针：检测拿到了多少张 ===
+    var count = 0;
+    if (body.illusts && Array.isArray(body.illusts)) {
+        count = body.illusts.length;
+        // 打印到 Loon 日志
+        console.log("📊 [Pixiv检测] 本次实际获取: " + count + " 张");
+        
+        if (count > 30) {
+            console.log("🎉 [Pixiv检测] 成功突破限制！服务器返回了 " + count + " 张！");
+        }
     }
 
-    // === 3. 排序 (按收藏量降序) ===
-    body.illusts.sort(function(a, b) {
-        var countA = parseInt(a.total_bookmarks) || 0;
-        var countB = parseInt(b.total_bookmarks) || 0;
-        return countB - countA;
-    });
-    
-    // === 4. 切片 (只取前 10 张) ===
-    // 即使拿到了 100 张，也只给你看最火的 10 张
-    body.illusts = body.illusts.slice(0, 10);
+    // === 😈 注入：修改下一页请求 ===
+    // 逻辑：保持 offset 不变 (别跳页)，但是追加 limit=100 (多拿点)
+    if (body.next_url) {
+        if (body.next_url.indexOf("limit=") === -1) {
+             body.next_url += "&limit=100";
+        } else {
+             body.next_url = body.next_url.replace(/limit=\d+/, "limit=100");
+        }
+        // 打印修改后的下一页链接，确认 offset 没乱跑
+        console.log("🔗 [Pixiv翻页] 下一页目标: " + body.next_url);
+    }
+
+    // 3. 排序与切片
+    if (body.illusts && Array.isArray(body.illusts)) {
+        body.illusts.sort(function(a, b) {
+            return (parseInt(b.total_bookmarks) || 0) - (parseInt(a.total_bookmarks) || 0);
+        });
+        
+        // 切片 Top 10
+        body.illusts = body.illusts.slice(0, 10);
+    }
 }
 
 $done({ body: JSON.stringify(body) });
