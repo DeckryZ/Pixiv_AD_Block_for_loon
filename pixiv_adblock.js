@@ -1,9 +1,9 @@
 /*
- * Pixiv Pro (Smart Next & Detection)
- * ------------------------------
- * 1. 自动检测并打印实际获取的图片数量
- * 2. 修改下一页链接 (next_url)，尝试索要 100 张
- * 3. 排序并保留 Top 10
+ * Pixiv Response: Clean & Sort
+ * ----------------------------
+ * 1. 清洗 next_url (防止翻页带回 iOS 标记)
+ * 2. VIP 解锁
+ * 3. 搜索结果 Top 10 排序
  */
 
 var body = JSON.parse($response.body);
@@ -16,37 +16,22 @@ if (body.user) body.user.is_premium = true;
 // 2. 搜索逻辑
 if (url.indexOf("word=") !== -1) {
 
-    // === 📊 探针：检测拿到了多少张 ===
-    var count = 0;
-    if (body.illusts && Array.isArray(body.illusts)) {
-        count = body.illusts.length;
-        // 打印到 Loon 日志
-        console.log("📊 [Pixiv检测] 本次实际获取: " + count + " 张");
-        
-        if (count > 30) {
-            console.log("🎉 [Pixiv检测] 成功突破限制！服务器返回了 " + count + " 张！");
-        }
-    }
-
-    // === 😈 注入：修改下一页请求 ===
-    // 逻辑：保持 offset 不变 (别跳页)，但是追加 limit=100 (多拿点)
+    // === 🧹 清洗 next_url ===
     if (body.next_url) {
-        if (body.next_url.indexOf("limit=") === -1) {
-             body.next_url += "&limit=100";
-        } else {
-             body.next_url = body.next_url.replace(/limit=\d+/, "limit=100");
+        // 确保下一页链接里没有 filter=for_ios
+        if (body.next_url.indexOf("filter=for_ios") !== -1) {
+            body.next_url = body.next_url.replace(/&?filter=for_ios/, "");
         }
-        // 打印修改后的下一页链接，确认 offset 没乱跑
-        console.log("🔗 [Pixiv翻页] 下一页目标: " + body.next_url);
     }
 
     // 3. 排序与切片
     if (body.illusts && Array.isArray(body.illusts)) {
+        // 按收藏量降序
         body.illusts.sort(function(a, b) {
             return (parseInt(b.total_bookmarks) || 0) - (parseInt(a.total_bookmarks) || 0);
         });
         
-        // 切片 Top 10
+        // 只取前 10 张精华
         body.illusts = body.illusts.slice(0, 10);
     }
 }
