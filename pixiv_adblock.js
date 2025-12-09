@@ -15,7 +15,7 @@ if (typeof $argument !== "undefined" && $argument === "true") {
 }
 
 // 调试日志 (可选，确认是否生效)
-// console.log("🛡️ [Pixiv] R-18 Filter: " + hideR18 + " (Arg: " + $argument + ")");
+console.log("🛡️ [Pixiv] R-18 Filter: " + hideR18 + " (Arg: " + $argument + ")");
 
 // VIP 功能
 if (body.response && body.response.user) body.response.user.is_premium = true;
