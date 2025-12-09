@@ -1,27 +1,30 @@
 /*
- * Pixiv Pro (Final Argument Fix)
+ * Pixiv Pro (Persistent Store 版)
  * ------------------------------
- * 适配 Loon 标准 Argument 传参逻辑
+ * 直接读取 Loon 的存储设置，绕过参数传递 Bug
  */
 
 var body = JSON.parse($response.body);
 var url = $request.url;
 
-// === 关键修改：直接判断 argument 是否等于字符串 "true" ===
-// Loon 的 switch 参数开启时会传入 "true"，关闭时传入 "false"
+// === 核心修改：从持久化存储读取开关 ===
+// 这里的 key "R18Switch" 必须和插件配置里的变量名一致
 var hideR18 = false;
-if (typeof $argument !== "undefined" && $argument === "true") {
+var switchValue = $persistentStore.read("R18Switch");
+
+// 打印日志方便调试
+console.log("🔍 [Pixiv] 读取开关状态: " + switchValue);
+
+// 兼容字符串 "true" 和布尔值 true
+if (switchValue === "true" || switchValue === true) {
     hideR18 = true;
 }
 
-// 调试日志 (可选，确认是否生效)
-console.log("🛡️ [Pixiv] R-18 Filter: " + hideR18 + " (Arg: " + $argument + ")");
-
-// VIP 功能
+// VIP 功能 (保持不变)
 if (body.response && body.response.user) body.response.user.is_premium = true;
 if (body.user) body.user.is_premium = true;
 
-// 搜索逻辑
+// 搜索排序逻辑
 if (url.indexOf("word=") !== -1 && body.illusts && Array.isArray(body.illusts)) {
     
     // R-18 过滤
@@ -39,7 +42,7 @@ if (url.indexOf("word=") !== -1 && body.illusts && Array.isArray(body.illusts)) 
         });
     }
 
-    // 排序 (按收藏量)
+    // 排序
     body.illusts.sort(function(a, b) {
         return (parseInt(b.total_bookmarks) || 0) - (parseInt(a.total_bookmarks) || 0);
     });
