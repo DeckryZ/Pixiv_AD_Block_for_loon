@@ -1,18 +1,19 @@
 #!name = Pixiv Pro (AdBlock & Sort)
-#!desc = 移除广告 + 解锁 VIP + 搜索结果精华排序 (Top 10)。支持 R-18 过滤开关。
+#!desc = 移除广告 + 解锁 VIP + 搜索精华排序 (Top 10)。
 #!author = DeckryZ
 #!icon = https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/main/IMG_6727.webp
 
 [Argument]
-filter_r18 = switch, false, tag=隐藏 R-18, desc=开启后搜索结果将过滤掉所有 R-18 内容，仅显示全年龄插画。
+# 定义一个开关参数，变量名为 R18Switch，默认 false
+R18Switch = switch, false, tag=隐藏 R-18, desc=开启后将过滤掉所有 R-18 内容
 
 [Script]
 # VIP解锁接口
 http-response ^https?:\/\/oauth\.secure\.pixiv\.net\/(auth\/token) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Auth
 
-# 搜索与推荐接口 (注入了 R-18 开关参数)
-# JS 脚本会自动判断：只有带 word= 关键词的搜索请求才会执行排序和 Top 10 切割
-http-response ^https?:\/\/app-api\.pixiv\.net\/v\d\/.*(search\/illust|illust\/recommended) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Sort, argument="hide_r18={filter_r18}"
+# 搜索与推荐接口
+# ⚠️ 核心修正：直接使用 {R18Switch} 进行变量插值
+http-response ^https?:\/\/app-api\.pixiv\.net\/v\d\/.*(search\/illust|illust\/recommended) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Sort, argument={R18Switch}
 
 [MitM]
 hostname = oauth.secure.pixiv.net, app-api.pixiv.net
