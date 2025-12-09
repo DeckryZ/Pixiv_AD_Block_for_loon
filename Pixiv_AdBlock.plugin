@@ -1,42 +1,20 @@
-/*
- * Pixiv Pro (Response Handler)
- * ----------------------------
- * 功能：
- * 1. VIP 解锁
- * 2. 监测实际加载数量 (日志+弹窗)
- * 3. 搜索结果热度排序
- * 4. 只保留 Top 10
- */
+#!name = Pixiv Pro (Remote Sync)
+#!desc = [全远程脚本] 移除广告 + 解锁 VIP + 强制请求100张 + 搜索热度排序(Top 10)
+#!author = DeckryZ
+#!icon = https://www.pixiv.net/favicon.ico
 
-var body = JSON.parse($response.body);
-var url = $request.url;
+[Script]
+# 1. 发送请求时：拦截并修改 URL (引用远程 pixiv_request.js)
+# 功能：尝试注入 &limit=100
+http-request ^https?:\/\/app-api\.pixiv\.net\/v\d\/.*search\/illust script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_request.js, tag=Pixiv_Req_100
 
-// 1. VIP 解锁
-if (body.response && body.response.user) body.response.user.is_premium = true;
-if (body.user) body.user.is_premium = true;
+# 2. 收到回复时：排序 + 切片 (引用远程 pixiv_adblock.js)
+# 功能：按热度排序并只取前 10 张 (你刚才确认过这个脚本里包含了排序逻辑)
+http-response ^https?:\/\/app-api\.pixiv\.net\/v\d\/.*(search\/illust|illust\/recommended) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Res_Sort
 
-// 2. 搜索逻辑
-if (url.indexOf("word=") !== -1 && body.illusts && Array.isArray(body.illusts)) {
-    
-    // === 📊 数量检测 ===
-    var totalCount = body.illusts.length;
-    console.log("📊 [Pixiv] 本次加载图片数量: " + totalCount);
+# 3. VIP 验证接口 (引用远程 pixiv_adblock.js)
+# 功能：解锁 VIP
+http-response ^https?:\/\/oauth\.secure\.pixiv\.net\/(auth\/token) script-path=https://raw.githubusercontent.com/DeckryZ/Pixiv_AD_Block_for_loon/refs/heads/main/pixiv_adblock.js, requires-body=true, timeout=20, tag=Pixiv_Auth
 
-    // 如果成功突破 30 张，发个弹窗庆祝一下 (防止刷屏，只有>30才弹)
-    if (totalCount > 30) {
-        $notification.post("Pixiv Pro", "请求增强成功", "服务器返回了 " + totalCount + " 张图片进行排序！");
-    }
-
-    // === 3. 排序 (按收藏量降序) ===
-    body.illusts.sort(function(a, b) {
-        var countA = parseInt(a.total_bookmarks) || 0;
-        var countB = parseInt(b.total_bookmarks) || 0;
-        return countB - countA;
-    });
-    
-    // === 4. 切片 (只取前 10 张) ===
-    // 即使拿到了 100 张，也只给你看最火的 10 张
-    body.illusts = body.illusts.slice(0, 10);
-}
-
-$done({ body: JSON.stringify(body) });
+[MitM]
+hostname = oauth.secure.pixiv.net, app-api.pixiv.net
